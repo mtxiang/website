@@ -1,0 +1,51 @@
+---
+import Base from "../../../layouts/Base.astro";
+import { installations, coverFor } from "../../../data/installations";
+
+const featured = installations.filter((i) => i.onWall);
+const swatch = (a: string, b: string) =>
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='600' height='420'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${a}'/><stop offset='1' stop-color='${b}'/></linearGradient></defs><rect width='600' height='420' fill='url(#g)'/></svg>`
+  );
+---
+
+<Base
+  title="Projects & Installations"
+  description="Projects and installations by Michelle Xiang."
+>
+  <section class="wrap prose gallery-page-head">
+    <a class="back-link" href="/photography/">← the wall</a>
+    <p class="lede">Projects &amp; Installations</p>
+    <p class="muted">selected works &amp; the rooms I shoot for</p>
+  </section>
+
+  <div class="wrap">
+    <ul class="project-index">
+      {
+        featured.map((inst) => {
+          const cover = coverFor(inst);
+          return (
+            <li>
+              <a href={`/photography/projects/${inst.slug}/`}>
+                <span class="pi-cover">
+                  <img
+                    src={cover ?? swatch(inst.tone[0], inst.tone[1])}
+                    alt={inst.title}
+                    loading="lazy"
+                  />
+                </span>
+                <span class="pi-meta">
+                  <span class="pi-title">{inst.title}</span>
+                  {inst.org && <span class="pi-sub">{inst.org}</span>}
+                  {inst.blurb && <span class="pi-blurb">{inst.blurb}</span>}
+                  <span class="pi-read">view →</span>
+                </span>
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+  </div>
+</Base>

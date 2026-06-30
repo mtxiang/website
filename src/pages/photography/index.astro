@@ -1,0 +1,391 @@
+---
+import Base from "../../layouts/Base.astro";
+import { photos, CATEGORIES, CATEGORY_LABELS } from "../../data/photos";
+import { installations, coverFor } from "../../data/installations";
+
+const projectThumbs = installations.filter((i) => i.onWall);
+
+// TEMP: set to false to bring the gallery wall back.
+const UNDER_CONSTRUCTION = true;
+
+// Which prints appear on the wall is set per-photo via `wall: true` in
+// manifest.json — no cap. Photos without the flag stay in the gallery page only.
+const byCat = Object.fromEntries(
+  CATEGORIES.map((c) => [
+    c,
+    photos.filter((p) => p.category === c && p.wall),
+  ])
+);
+
+const artSwatch = (a = "#7a3340", b = "#c2702f") =>
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='400' height='500'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${a}'/><stop offset='1' stop-color='${b}'/></linearGradient></defs><rect width='400' height='500' fill='url(#g)'/></svg>`
+  );
+---
+
+<Base
+  title="Photography"
+  description="Photography by Michelle Xiang — concert, action, portraits, life, landscape, and film."
+>
+  {UNDER_CONSTRUCTION && (
+    <section class="under-construction">
+      <p class="uc-mark">🚧</p>
+      <p class="uc-text">under construction!</p>
+      <p class="uc-sub">the gallery wall is being reworked — check back soon.</p>
+    </section>
+  )}
+
+  {!UNDER_CONSTRUCTION && (
+  <Fragment>
+  <div class="fullbleed wall">
+    <div class="clusters-outer">
+    <div class="clusters" id="clusters">
+      {
+        CATEGORIES.map((cat) => (
+          <div class="cluster">
+            <div class="cluster-prints">
+              {byCat[cat].map((p) => (
+                <figure
+                  class="hang photo"
+                  data-category={cat}
+                  data-label={CATEGORY_LABELS[cat]}
+                  data-href={`/photography/${cat}/`}
+                >
+                  <img
+                    src={p.src}
+                    alt={p.caption ?? cat}
+                    loading="lazy"
+                    draggable="false"
+                    data-caption={p.caption ?? cat}
+                  />
+                  <figcaption>{p.caption ?? cat}</figcaption>
+                </figure>
+              ))}
+              <a class="cluster-label" href={`/photography/${cat}/`}>
+                {CATEGORY_LABELS[cat]}
+              </a>
+            </div>
+          </div>
+        ))
+      }
+
+      <div class="cluster art-cluster">
+        <div class="cluster-prints">
+          {
+            projectThumbs.map((inst) => {
+              const cover = coverFor(inst);
+              return (
+                <figure
+                  class="hang art"
+                  data-category="projects"
+                  data-post={`/photography/projects/${inst.slug}/`}
+                >
+                  <img
+                    src={cover ?? artSwatch(inst.tone[0], inst.tone[1])}
+                    alt={inst.title}
+                    loading="lazy"
+                    draggable="false"
+                    data-caption={inst.title}
+                  />
+                  <figcaption>{inst.title}</figcaption>
+                </figure>
+              );
+            })
+          }
+          <a class="cluster-label" href="/photography/projects/">
+            other projects &amp; installations
+          </a>
+        </div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <!-- lightbox -->
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <button class="lb-close" aria-label="Close">&times;</button>
+    <figure>
+      <img src="" alt="" />
+      <figcaption></figcaption>
+      <a class="lb-more" href="#">see more</a>
+    </figure>
+  </div>
+  </Fragment>
+  )}
+</Base>
+
+<script>
+  const wrapEl = document.getElementById("clusters") as HTMLElement | null;
+  if (wrapEl) {
+  const outerEl = wrapEl.parentElement as HTMLElement;
+  const clusterEls = [...wrapEl.querySelectorAll<HTMLElement>(".cluster")];
+
+  // distinct base print size per cluster so no two groups look alike
+  const BASE = [150, 116, 174, 126, 141, 108, 132];
+
+  // --- pack one cluster center-out (label sticker = just another item) -----
+  function layoutClusterPhotos(cluster: HTMLElement, idx: number) {
+    const cp = cluster.querySelector(".cluster-prints") as HTMLElement;
+    const hangs = [...cp.querySelectorAll<HTMLElement>(".hang")];
+    const label = cp.querySelector(".cluster-label") as HTMLElement;
+    const items: HTMLElement[] = [...hangs, label]; // label placed last
+    const base = BASE[idx % BASE.length];
+    const gap = 6; // tight within a cluster
+    const placed: { cx: number; cy: number; w: number; h: number }[] = [];
+
+    items.forEach((it, k) => {
+      let w: number, h: number;
+      if (it.classList.contains("hang")) {
+        const img = it.querySelector("img") as HTMLImageElement;
+        const ratio = (img.naturalHeight || 1000) / (img.naturalWidth || 1000);
+        w = Math.round(base * (0.82 + ((k * 29) % 4) * 0.09));
+        h = w * ratio;
+        it.style.width = `${w}px`;
+      } else {
+        // label sticker — natural size + clearance for its slight rotation
+        w = it.offsetWidth + 12;
+        h = it.offsetHeight + 12;
+      }
+      let cx = 0,
+        cy = 0;
+      if (k > 0) {
+        for (let t = 1; t < 1000; t++) {
+          const ang = t * 2.39996323;
+          const rad = base * 0.3 * Math.sqrt(t);
+          cx = Math.cos(ang) * rad;
+          cy = Math.sin(ang) * rad;
+          const ok = placed.every(
+            (p) =>
+              Math.abs(p.cx - cx) >= (p.w + w) / 2 + gap ||
+              Math.abs(p.cy - cy) >= (p.h + h) / 2 + gap
+          );
+          if (ok) break;
+        }
+      }
+      placed.push({ cx, cy, w, h });
+    });
+
+    let minX = 1e9,
+      minY = 1e9,
+      maxX = -1e9,
+      maxY = -1e9;
+    placed.forEach((p) => {
+      minX = Math.min(minX, p.cx - p.w / 2);
+      minY = Math.min(minY, p.cy - p.h / 2);
+      maxX = Math.max(maxX, p.cx + p.w / 2);
+      maxY = Math.max(maxY, p.cy + p.h / 2);
+    });
+    items.forEach((it, k) => {
+      const p = placed[k];
+      it.style.left = `${p.cx - p.w / 2 - minX}px`;
+      it.style.top = `${p.cy - p.h / 2 - minY}px`;
+      if (it.classList.contains("hang")) {
+        it.style.transform = "none";
+        it.style.zIndex = String(20 - k);
+      } else {
+        it.style.transform = "none";
+        it.style.zIndex = "30";
+      }
+    });
+    cp.style.width = `${maxX - minX}px`;
+    cp.style.height = `${maxY - minY}px`;
+  }
+
+  // --- place photo groups center-out radially; art group bottom-right ------
+  // No width-squeeze here (that distorts gaps and causes overlap). We place at
+  // natural radial positions; the outer uniform transform handles fitting.
+  function placeClusters() {
+    const margin = 8;
+    const gap = 40; // groups further apart
+    const artEl = wrapEl.querySelector(".art-cluster") as HTMLElement;
+    const photoEls = clusterEls.filter((el) => el !== artEl);
+    const aw = artEl.offsetWidth;
+    const ah = artEl.offsetHeight;
+
+    const boxes = photoEls.map((el) => ({
+      el,
+      w: el.offsetWidth,
+      h: el.offsetHeight,
+    }));
+    const avg = Math.sqrt(
+      boxes.reduce((s, b) => s + b.w * b.h, 0) / boxes.length
+    );
+    const step = avg * 0.92;
+    const c = boxes.map((b, i) => {
+      const ang = i * 2.39996323 - Math.PI / 2;
+      const rad = i === 0 ? 0 : step * Math.sqrt(i);
+      // stretch horizontally + compress vertically so the field matches the
+      // wide viewport aspect (=> larger uniform scale => bigger prints).
+      // collision resolve below still guarantees no overlap.
+      return { x: Math.cos(ang) * rad * 1.7, y: Math.sin(ang) * rad * 0.74 };
+    });
+
+    for (let iter = 0; iter < 200; iter++) {
+      let moved = false;
+      for (let i = 0; i < boxes.length; i++) {
+        for (let j = i + 1; j < boxes.length; j++) {
+          const dx = c[j].x - c[i].x;
+          const dy = c[j].y - c[i].y;
+          const ox = (boxes[i].w + boxes[j].w) / 2 + gap - Math.abs(dx);
+          const oy = (boxes[i].h + boxes[j].h) / 2 + gap - Math.abs(dy);
+          if (ox > 0 && oy > 0) {
+            if (ox < oy) {
+              const s = ((dx < 0 ? -1 : 1) * ox) / 2;
+              c[i].x -= s;
+              c[j].x += s;
+            } else {
+              const s = ((dy < 0 ? -1 : 1) * oy) / 2;
+              c[i].y -= s;
+              c[j].y += s;
+            }
+            moved = true;
+          }
+        }
+      }
+      if (!moved) break;
+    }
+
+    // normalize so the photo bbox starts at (margin, margin)
+    let minX = 1e9,
+      minY = 1e9;
+    boxes.forEach((b, i) => {
+      minX = Math.min(minX, c[i].x - b.w / 2);
+      minY = Math.min(minY, c[i].y - b.h / 2);
+    });
+    const offX = margin - minX;
+    const offY = margin - minY;
+    let pRight = 0,
+      pBottom = 0;
+    boxes.forEach((b, i) => {
+      const left = c[i].x + offX - b.w / 2;
+      const top = c[i].y + offY - b.h / 2;
+      b.el.style.left = `${left}px`;
+      b.el.style.top = `${top}px`;
+      pRight = Math.max(pRight, left + b.w);
+      pBottom = Math.max(pBottom, top + b.h);
+    });
+
+    // art group at the bottom-right of the photo bbox; drop below if it collides
+    let aLeft = Math.max(margin, pRight - aw);
+    let aTop = pBottom - ah;
+    const collides = boxes.some((b) => {
+      const bl = parseFloat(b.el.style.left);
+      const bt = parseFloat(b.el.style.top);
+      return !(
+        aLeft > bl + b.w + gap ||
+        aLeft + aw < bl - gap ||
+        aTop > bt + b.h + gap ||
+        aTop + ah < bt - gap
+      );
+    });
+    if (collides) {
+      aTop = pBottom + gap;
+      aLeft = Math.max(margin, pRight - aw);
+    }
+    artEl.style.left = `${aLeft}px`;
+    artEl.style.top = `${aTop}px`;
+
+    const totalW = Math.max(pRight, aLeft + aw) + margin;
+    const totalH = Math.max(pBottom, aTop + ah) + margin;
+    wrapEl.style.width = `${totalW}px`;
+    wrapEl.style.height = `${totalH}px`;
+  }
+
+  // available vertical room for the wall content (so the page never scrolls)
+  function availHeight(): number {
+    const header = document.querySelector(".site-header") as HTMLElement | null;
+    const footer = document.querySelector(".site-footer") as HTMLElement | null;
+    const wall = document.querySelector(".wall") as HTMLElement;
+    const ws = getComputedStyle(wall);
+    const headerH = header ? header.offsetHeight : 0;
+    const footerH = footer
+      ? footer.offsetHeight + parseFloat(getComputedStyle(footer).marginTop)
+      : 0;
+    const pad = parseFloat(ws.paddingTop) + parseFloat(ws.paddingBottom);
+    return window.innerHeight - headerH - footerH - pad - 12;
+  }
+
+  // lay out at natural size, then uniformly scale the whole field to fit both
+  // the available width and height (uniform => no distortion => no overlap)
+  function layout() {
+    wrapEl.style.transform = "none";
+    wrapEl.style.width = "auto";
+    clusterEls.forEach((cl, i) => layoutClusterPhotos(cl, i));
+    placeClusters();
+    const naturalW = parseFloat(wrapEl.style.width);
+    const naturalH = parseFloat(wrapEl.style.height);
+    const availW = outerEl.clientWidth;
+    const availH = availHeight();
+    const scale = Math.min(1, availW / naturalW, availH / naturalH);
+    wrapEl.style.transformOrigin = "top left";
+    wrapEl.style.transform = `translateX(${
+      (availW - naturalW * scale) / 2
+    }px) scale(${scale})`;
+    outerEl.style.height = `${naturalH * scale}px`;
+  }
+
+  // ---- lightbox -----------------------------------------------------------
+  const prints = [...document.querySelectorAll<HTMLElement>(".hang")];
+  const lightbox = document.getElementById("lightbox") as HTMLElement;
+  const lbImg = lightbox.querySelector("img") as HTMLImageElement;
+  const lbCap = lightbox.querySelector("figcaption") as HTMLElement;
+  const lbMore = lightbox.querySelector(".lb-more") as HTMLAnchorElement;
+  const lbClose = lightbox.querySelector(".lb-close") as HTMLButtonElement;
+
+  prints.forEach((item) => {
+    item.addEventListener("click", () => {
+      // project/installation thumbnails open their post page
+      const post = item.dataset.post;
+      if (post) {
+        window.location.href = post;
+        return;
+      }
+      const img = item.querySelector("img") as HTMLImageElement;
+      lbImg.src = img.src;
+      lbImg.alt = img.alt;
+      lbCap.textContent = img.dataset.caption || "";
+      lbMore.textContent = `see more ${item.dataset.label} →`;
+      lbMore.href = item.dataset.href || "#";
+      lightbox.classList.add("open");
+      lightbox.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    });
+  });
+  function close() {
+    lightbox.classList.remove("open");
+    lightbox.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+  lightbox.addEventListener("click", (e) => {
+    if (e.target === lightbox) close();
+  });
+  lbClose.addEventListener("click", close);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") close();
+  });
+
+  // ---- boot ---------------------------------------------------------------
+  let pending = prints.length;
+  if (pending === 0) layout();
+  prints.forEach((it) => {
+    const img = it.querySelector("img") as HTMLImageElement;
+    if (img.complete) {
+      if (--pending === 0) layout();
+    } else {
+      img.addEventListener("load", () => {
+        if (--pending === 0) layout();
+      });
+      img.addEventListener("error", () => {
+        if (--pending === 0) layout();
+      });
+    }
+  });
+  setTimeout(layout, 600);
+  let rt: number | undefined;
+  window.addEventListener("resize", () => {
+    clearTimeout(rt);
+    rt = window.setTimeout(layout, 160);
+  });
+  }
+</script>

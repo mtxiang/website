@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:karynnakamura.com)",
+      "WebFetch(domain:gloriazh.com)",
+      "WebFetch(domain:mahdiafshari.com)",
+      "WebFetch(domain:spencer.place)",
+      "WebFetch(domain:wendiyan.com)",
+      "Bash(npm -v)",
+      "Read(//Users/michellexiang/**)",
+      "Bash(brew list *)",
+      "Bash(brew install *)",
+      "Bash(npm create *)",
+      "WebFetch(domain:paulethenriette.com)",
+      "Bash(node scripts/gen-placeholders.mjs)",
+      "Bash(npm run *)",
+      "Read(//tmp/**)",
+      "Bash(pkill -f \"astro dev\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(rm -f public/photos/*.svg public/photos/manifest.json && node scripts/gen-placeholders.mjs && ls public/photos/)",
+      "Bash(rm -f public/photos/*.svg public/photos/manifest.json && node scripts/gen-placeholders.mjs && ls public/photos/ | wc -l)",
+      "Bash(cat)",
+      "Bash(node /tmp/css-surgery.mjs)",
+      "Bash(rm -f public/photos/*.svg public/photos/manifest.json && node scripts/gen-placeholders.mjs && echo \"---verify bw svg is valid---\" && grep -l \"B&amp;W\" public/photos/*.svg | head -3)",
+      "Bash(rm -f public/photos/*.svg public/photos/manifest.json && node scripts/gen-placeholders.mjs && ls public/photos/*.svg | wc -l)",
+      "Bash(node /tmp/css-wall.mjs)",
+      "Bash(node /tmp/css-cute.mjs)",
+      "Bash(node /tmp/css-min.mjs)",
+      "Bash(node /tmp/css-exhibit.mjs)",
+      "Bash(node /tmp/css-exhibit2.mjs)",
+      "Bash(node /tmp/css-cluster.mjs)",
+      "WebFetch(domain:deaniechen.com)",
+      "Bash(python3 -c ' *)",
+      "Bash(pip3 install *)",
+      "Bash(node scripts/build-photos.mjs)",
+      "Bash(node -e ' *)",
+      "Bash(gh auth *)",
+      "Bash(git config *)"
+    ]
+  }
+}

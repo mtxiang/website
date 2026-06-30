@@ -1,0 +1,74 @@
+---
+import Base from "../layouts/Base.astro";
+
+// Formspree form ID (https://formspree.io/f/xaqgbzpr). Submissions are sent via
+// AJAX so visitors stay on the page; `action` is kept as a no-JS fallback.
+const formId = "xaqgbzpr";
+const formspreeEndpoint = `https://formspree.io/f/${formId}`;
+---
+
+<Base title="Contact & Booking" description="Get in touch or book a photoshoot with Michelle Xiang.">
+  <section class="wrap prose">
+    <p class="eyebrow">Contact &amp; Booking</p>
+    <p class="lede">Say hello — or book a shoot.</p>
+    <p class="muted">
+      Email me at <a href="mailto:mtxiang@mit.edu">mtxiang@mit.edu</a>. Always
+      happy to swap Spotify or Letterboxd profiles! For all photography bookings
+      and inquiries, please fill out the form below.
+    </p>
+
+    <!-- INQUIRY FORM (Formspree AJAX) -->
+    <div class="fs-success" data-fs-success></div>
+
+    <form
+      class="book-form"
+      id="book-form"
+      action={formspreeEndpoint}
+      method="POST"
+    >
+      <p class="form-eyebrow">Send a message</p>
+
+      <div class="field-grid">
+        <label class="field">
+          <span class="field-label">First name</span>
+          <input type="text" name="first-name" required data-fs-field />
+        </label>
+        <label class="field">
+          <span class="field-label">Last name</span>
+          <input type="text" name="last-name" required data-fs-field />
+        </label>
+        <label class="field field-wide">
+          <span class="field-label">Email</span>
+          <input type="email" name="email" required data-fs-field />
+          <span class="field-error" data-fs-error="email"></span>
+        </label>
+        <label class="field field-wide">
+          <span class="field-label">Subject</span>
+          <input type="text" name="_subject" required data-fs-field />
+        </label>
+        <label class="field field-wide">
+          <span class="field-label">Message</span>
+          <textarea
+            name="message"
+            rows="5"
+            required
+            data-fs-field></textarea>
+          <span class="field-error" data-fs-error="message"></span>
+        </label>
+      </div>
+
+      <span class="field-error form-error" data-fs-error></span>
+      <button type="submit" class="book-submit" data-fs-submit-btn>Send message →</button>
+    </form>
+  </section>
+</Base>
+
+<script is:inline>
+  window.formspree =
+    window.formspree ||
+    function () {
+      (formspree.q = formspree.q || []).push(arguments);
+    };
+  formspree("initForm", { formElement: "#book-form", formId: "xaqgbzpr" });
+</script>
+<script is:inline src="https://unpkg.com/@formspree/ajax@1" defer></script>

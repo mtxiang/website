@@ -1,0 +1,71 @@
+---
+interface Props {
+  images: string[];
+  label?: string;
+}
+const { images, label } = Astro.props;
+---
+
+<section class="carousel" data-carousel>
+  {label && <p class="carousel-year">{label}</p>}
+  <div class="carousel-viewport">
+    <button class="carousel-arrow prev" data-prev aria-label="Previous">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"
+        ><path d="M15 5 8 12l7 7" fill="none" stroke="currentColor" stroke-width="1.6"
+          stroke-linecap="round" stroke-linejoin="round"></path></svg
+      >
+    </button>
+    <div class="carousel-track" data-track>
+      {
+        images.length === 0 && (
+          <p class="carousel-empty">
+            Drop photos into this folder, then run <code>npm run photos</code>.
+          </p>
+        )
+      }
+      {
+        images.map((src) => (
+          <figure class="carousel-slide">
+            <img src={src} alt={label ?? ""} loading="lazy" />
+          </figure>
+        ))
+      }
+    </div>
+    <button class="carousel-arrow next" data-next aria-label="Next">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"
+        ><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.6"
+          stroke-linecap="round" stroke-linejoin="round"></path></svg
+      >
+    </button>
+  </div>
+</section>
+
+<script>
+  // wire every carousel on the page (MIT Gala has three)
+  document.querySelectorAll<HTMLElement>("[data-carousel]").forEach((car) => {
+    const track = car.querySelector("[data-track]") as HTMLElement;
+    const prev = car.querySelector("[data-prev]") as HTMLButtonElement;
+    const next = car.querySelector("[data-next]") as HTMLButtonElement;
+    if (!track) return;
+
+    const step = () => {
+      const slide = track.querySelector<HTMLElement>(".carousel-slide");
+      const gap = parseFloat(getComputedStyle(track).columnGap || "0") || 0;
+      return slide ? slide.offsetWidth + gap : track.clientWidth * 0.8;
+    };
+    const update = () => {
+      const max = track.scrollWidth - track.clientWidth - 2;
+      prev.disabled = track.scrollLeft <= 2;
+      next.disabled = track.scrollLeft >= max;
+    };
+    prev.addEventListener("click", () =>
+      track.scrollBy({ left: -step(), behavior: "smooth" })
+    );
+    next.addEventListener("click", () =>
+      track.scrollBy({ left: step(), behavior: "smooth" })
+    );
+    track.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    update();
+  });
+</script>

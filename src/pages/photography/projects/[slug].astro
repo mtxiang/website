@@ -1,0 +1,152 @@
+---
+import Base from "../../../layouts/Base.astro";
+import Carousel from "../../../components/Carousel.astro";
+import {
+  installations,
+  installationBySlug,
+  imagesFor,
+  coverFor,
+} from "../../../data/installations";
+
+export function getStaticPaths() {
+  return installations.map((inst) => ({ params: { slug: inst.slug } }));
+}
+
+const { slug } = Astro.params;
+const inst = installationBySlug[slug as string];
+
+const swatch = (a: string, b: string) =>
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    `<svg xmlns='http://www.w3.org/2000/svg' width='600' height='420'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${a}'/><stop offset='1' stop-color='${b}'/></linearGradient></defs><rect width='600' height='420' fill='url(#g)'/></svg>`
+  );
+
+const galleryImages = inst.layout === "gallery" ? imagesFor(inst.folder!) : [];
+const children =
+  inst.layout === "index"
+    ? (inst.children ?? []).map((s) => installationBySlug[s]).filter(Boolean)
+    : [];
+---
+
+<Base title={inst.title} description={inst.blurb}>
+  <article class="essay">
+    <header class="essay-head wrap">
+      <a class="back-link" href="/photography/projects/">← projects</a>
+      <h1 class="essay-title">{inst.title}</h1>
+      {inst.org && <p class="essay-meta">{inst.org}</p>}
+      {inst.blurb && <p class="essay-intro">{inst.blurb}</p>}
+      {
+        inst.body && (
+          <div class="essay-body">
+            {inst.body.map((para) => (
+              <p>{para}</p>
+            ))}
+          </div>
+        )
+      }
+    </header>
+
+    {/* GALLERY — a masonry of the folder's images */}
+    {
+      inst.layout === "gallery" && (
+        <div class="wrap">
+          {galleryImages.length === 0 ? (
+            <p class="muted post-empty">
+              Drop photos into <code>public/installations/{inst.folder}/</code>,
+              then run <code>npm run photos</code>.
+            </p>
+          ) : (
+            <div class="photo-grid">
+              {galleryImages.map((src) => (
+                <figure class="grid-photo">
+                  <img src={src} alt={inst.title} loading="lazy" data-caption="" />
+                </figure>
+              ))}
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    {/* CAROUSEL — one arrow-carousel per year */}
+    {
+      inst.layout === "carousel" && (
+        <div class="wrap post-carousels">
+          {(inst.carousels ?? []).map((c) => (
+            <Carousel images={imagesFor(c.folder)} label={c.year} />
+          ))}
+        </div>
+      )
+    }
+
+    {/* INDEX — links to child posts (e.g. the 5 Infinite spreads) */}
+    {
+      inst.layout === "index" && (
+        <div class="wrap">
+          <ul class="project-index">
+            {children.map((child) => {
+              const cover = coverFor(child);
+              return (
+                <li>
+                  <a href={`/photography/projects/${child.slug}/`}>
+                    <span class="pi-cover">
+                      <img
+                        src={cover ?? swatch(child.tone[0], child.tone[1])}
+                        alt={child.title}
+                        loading="lazy"
+                      />
+                    </span>
+                    <span class="pi-meta">
+                      <span class="pi-title">{child.title}</span>
+                      <span class="pi-read">view →</span>
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )
+    }
+  </article>
+
+  <!-- lightbox (gallery images click to enlarge) -->
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <button class="lb-close" aria-label="Close">&times;</button>
+    <figure>
+      <img src="" alt="" />
+      <figcaption></figcaption>
+    </figure>
+  </div>
+</Base>
+
+<script>
+  const items = [...document.querySelectorAll<HTMLElement>(".grid-photo")];
+  const lightbox = document.getElementById("lightbox") as HTMLElement;
+  if (lightbox && items.length) {
+    const lbImg = lightbox.querySelector("img") as HTMLImageElement;
+    const lbClose = lightbox.querySelector(".lb-close") as HTMLButtonElement;
+    items.forEach((item) => {
+      item.addEventListener("click", () => {
+        const img = item.querySelector("img") as HTMLImageElement;
+        lbImg.src = img.src;
+        lbImg.alt = img.alt;
+        lightbox.classList.add("open");
+        lightbox.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+      });
+    });
+    const close = () => {
+      lightbox.classList.remove("open");
+      lightbox.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+    };
+    lightbox.addEventListener("click", (e) => {
+      if (e.target === lightbox || (e.target as HTMLElement).closest(".lb-close"))
+        close();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") close();
+    });
+  }
+</script>

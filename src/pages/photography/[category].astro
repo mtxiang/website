@@ -1,0 +1,78 @@
+---
+import Base from "../../layouts/Base.astro";
+import { photos, CATEGORIES, CATEGORY_LABELS } from "../../data/photos";
+
+export function getStaticPaths() {
+  return CATEGORIES.map((category) => ({ params: { category } }));
+}
+
+const { category } = Astro.params;
+const label = CATEGORY_LABELS[category as keyof typeof CATEGORY_LABELS];
+const items = photos.filter((p) => p.category === category);
+---
+
+<Base title={label} description={`${label} — photography by Michelle Xiang.`}>
+  <section class="wrap prose gallery-page-head">
+    <a class="back-link" href="/photography/">← the wall</a>
+    <p class="lede">{label}</p>
+  </section>
+
+  <div class="wrap">
+    <div class="photo-grid">
+      {
+        items.map((it) => (
+          <figure class="grid-photo">
+            <img
+              src={it.src}
+              alt={it.caption ?? label}
+              loading="lazy"
+              data-caption={it.caption ?? label}
+            />
+            <figcaption>{it.caption ?? label}</figcaption>
+          </figure>
+        ))
+      }
+    </div>
+  </div>
+
+  <!-- lightbox -->
+  <div class="lightbox" id="lightbox" aria-hidden="true">
+    <button class="lb-close" aria-label="Close">&times;</button>
+    <figure>
+      <img src="" alt="" />
+      <figcaption></figcaption>
+    </figure>
+  </div>
+</Base>
+
+<script>
+  const items = [...document.querySelectorAll<HTMLElement>(".grid-photo")];
+  const lightbox = document.getElementById("lightbox") as HTMLElement;
+  const lbImg = lightbox.querySelector("img") as HTMLImageElement;
+  const lbCap = lightbox.querySelector("figcaption") as HTMLElement;
+  const lbClose = lightbox.querySelector(".lb-close") as HTMLButtonElement;
+
+  items.forEach((item) => {
+    item.addEventListener("click", () => {
+      const img = item.querySelector("img") as HTMLImageElement;
+      lbImg.src = img.src;
+      lbImg.alt = img.alt;
+      lbCap.textContent = img.dataset.caption || "";
+      lightbox.classList.add("open");
+      lightbox.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+    });
+  });
+  function close() {
+    lightbox.classList.remove("open");
+    lightbox.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+  lightbox.addEventListener("click", (e) => {
+    if (e.target === lightbox || (e.target as HTMLElement).closest(".lb-close"))
+      close();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") close();
+  });
+</script>
