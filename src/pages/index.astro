@@ -326,7 +326,7 @@ const emailHref = "mailto:michelle001.xiang@gmail.com,mtxiang@mit.edu";
   // clamp windows that are open on load, and re-clamp when the desktop resizes
   const clampVisible = () =>
     wins.forEach((w) => {
-      if (w.style.display !== "none") clampToDock(w);
+      if (w.style.display !== "none" && !w.dataset.userResized) clampToDock(w);
     });
   clampVisible();
   window.addEventListener("resize", clampVisible);
@@ -344,6 +344,9 @@ const emailHref = "mailto:michelle001.xiang@gmail.com,mtxiang@mit.edu";
         e.stopPropagation();
         focusWin(win);
         win.classList.add("resizing");
+        // a manual resize overrides the dock height-cap set on open
+        win.style.maxHeight = "none";
+        win.dataset.userResized = "1";
         try {
           h.setPointerCapture(e.pointerId);
         } catch {}

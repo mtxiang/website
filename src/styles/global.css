@@ -162,7 +162,7 @@ a:hover {
   border-top: 1px solid var(--rule);
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.72rem;
+  font-size: 0.6rem;
   letter-spacing: 0.08em;
   display: flex;
   flex-wrap: wrap;
@@ -419,6 +419,40 @@ code {
 /* full-bleed helper — <main> is already viewport-width, so just fill it */
 .fullbleed {
   width: 100%;
+}
+
+/* Home (screen theme): fill the viewport exactly so the page never scrolls */
+body[data-theme="screen"] {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+body[data-theme="screen"] main {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+body[data-theme="screen"] .fullbleed {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+body[data-theme="screen"] .desktop {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+body[data-theme="screen"] .site-header {
+  padding-block: 1.1rem;
+  /* span full width: brand hard-left, nav hard-right */
+  max-width: none;
+  margin-inline: 0;
+  width: 100%;
+}
+body[data-theme="screen"] .site-footer {
+  margin-top: 0;
+  padding-block: 0.9rem;
 }
 
 /* =====================================================================
